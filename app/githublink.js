@@ -1,5 +1,6 @@
 import React from 'react';
 import GitHubLogo from './github-mark.svg';  
+import Image from 'next/image';
 
 const GitHubLink = () => {
   return (
@@ -10,7 +11,7 @@ const GitHubLink = () => {
         rel="noopener noreferrer"  
         style={{ display: 'flex', alignItems: 'center', fontSize: '13px' }}
       >
-        <img 
+        <Image 
           src={GitHubLogo}
           alt="GitHub Logo" 
           style={{ width: '17px', height: '17px', marginRight: '8px' }} 

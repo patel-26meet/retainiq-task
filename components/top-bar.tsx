@@ -1,12 +1,12 @@
 import { ArrowLeft } from "lucide-react"
-import { useState } from "react"
+import { ChangeEvent, useState } from "react"
 import GitHubLink from "../app/githublink.js"
 
 export const TopBar = () => {
-    const [head, sethead] = useState();
+    const [head, sethead] = useState<string |undefined>(undefined);
 
-    const handleInputChange = (x: any) => {
-        sethead(x.target.value);
+    const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        sethead(event.target.value);
     }
 
     return(

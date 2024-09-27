@@ -1,5 +1,5 @@
-import React, { useState, useRef, ReactNode, useEffect } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import React, { useState, useRef, useEffect } from 'react';
+import { DndProvider, useDrag, useDrop, ConnectDragSource } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Grip, Plus, Trash2 } from 'lucide-react';
 
@@ -10,56 +10,60 @@ interface RowData {
 }
  
 interface DraggableRowProps {
-  id: string;
-  index: number;
-  moveRow: (dragIndex: number, hoverIndex: number) => void;
-  children: (dragRef: React.Ref<HTMLDivElement>) => ReactNode;
+    id: string;
+    index: number;
+    moveRow: (dragIndex: number, hoverIndex: number) => void;
+    children: (dragSource: ConnectDragSource) => React.ReactNode;
 }
  
 interface DragItem {
-  index: number;
-  id: string;
-  type: string;
+    type: string;
+    id: string;
+    index: number; 
+}
+
+interface RowData {
+    id: string;
+    col1: string;
+    [key: `col${number}`]: string;
 }
 
 const DraggableRow = ( { id, index, moveRow, children } : DraggableRowProps) => {
     const ref = useRef(null);
+
     const [, drop] = useDrop({
         accept: 'row',
         hover(item: DragItem) {
-        if (!ref.current) {
-            return;
-        }
+        if (!ref.current) return;
+
         const dragIndex = item.index;
         const hoverIndex = index;
-        if (dragIndex === hoverIndex) {
-            return;
-        }
+        if (dragIndex === hoverIndex) return;
         moveRow(dragIndex, hoverIndex);
         item.index = hoverIndex;
         },
     });
 
-    const [{ isDragging }, drag, preview] = useDrag({
+    const [{ isDragging }, drag] = useDrag<DragItem, unknown, {isDragging: boolean}>({
         type: 'row',
-        item: { id, index },
+        item: { type:'row', id, index },
         collect: (monitor) => ({
         isDragging: monitor.isDragging(),
         }),
     });
 
-    preview(drop(ref));
+    drag(drop(ref));
 
     return (
         <div ref={ref} style={{ opacity: isDragging ? 0.75 : 1 }} className="flex group">
-        {children(drag)}
+          {children(drag)}
         </div>
     );
 };
 
 
 const MainTable = () => {
-  const [data, setData] = useState([
+  const [data, setData] = useState<RowData[]>([
     { id: 'row-0', col1: 'Content 1', col2: '1', col3: '11', col4: '111' },
     { id: 'row-1', col1: 'Content 2', col2: '2', col3: '22', col4: '222' },
     { id: 'row-2', col1: 'Content 3', col2: '3', col3: '33', col4: '333' },
@@ -78,10 +82,13 @@ const MainTable = () => {
 
   const addColumn = () => {
     setColumns(columns + 1);
-    setData(data.map(row => ({ ...row, [`col${columns + 1}`]: '' })));
+    setData(data.map(row => ({ 
+        ...row, 
+        [`col${columns + 1}`]: '' 
+    })));
   };
 
-  const deleteRow = (id: number) => {
+  const deleteRow = (id: string) => {
     setData(data.filter(row => row.id !== id));
   };
 
@@ -155,7 +162,7 @@ const MainTable = () => {
                           onClick={() => deleteRow(row.id)}
                         />
                         <span className="text-xl">{rowIndex + 1}</span>
-                        <div ref={dragRef} className="ml-4 cursor-move">
+                        <div {...dragRef} className="ml-4 cursor-move">
                           <Grip size={24} />
                         </div>
                       </div>
