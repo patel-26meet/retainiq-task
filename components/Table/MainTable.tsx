@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop, ConnectDragSource } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Grip, Plus, Trash2 } from 'lucide-react';
-
-interface RowData {
-    id: string;
-    col1: string;
-    [key: string]: string;
-}
+import { Grip, Plus, Trash2, PenSquare } from 'lucide-react';
+import Notification from '../notificationComponent';
+import ImageContainer from '../ImageContainer';
+import Image, { StaticImageData } from 'next/image';
+import image1 from '../../assets/image-1.jpg';
+import image2 from '../../assets/image-2.jpg';
+import image3 from '../../assets/image-3.jpg';
+import image4 from '../../assets/image-4.jpg';
+import image5 from '../../assets/image-5.jpg';
+import image6 from '../../assets/image-6.jpg';
  
 interface DraggableRowProps {
     id: string;
@@ -25,7 +28,7 @@ interface DragItem {
 interface RowData {
     id: string;
     col1: string;
-    [key: `col${number}`]: string;
+    [key: `col${number}`]: string | StaticImageData;
 }
 
 const DraggableRow = ( { id, index, moveRow, children } : DraggableRowProps) => {
@@ -64,11 +67,17 @@ const DraggableRow = ( { id, index, moveRow, children } : DraggableRowProps) => 
 
 const MainTable = () => {
   const [data, setData] = useState<RowData[]>([
-    { id: 'row-0', col1: 'Content 1', col2: '1', col3: '11', col4: '111' },
-    { id: 'row-1', col1: 'Content 2', col2: '2', col3: '22', col4: '222' },
-    { id: 'row-2', col1: 'Content 3', col2: '3', col3: '33', col4: '333' },
+    { id: 'row-0', col1: 'Content 1', col2: image1, col3: image2, col4: '' },
+    { id: 'row-1', col1: 'Content 2', col2: image3, col3: image4, col4: '' },
+    { id: 'row-2', col1: 'Content 3', col2: image5, col3: image6, col4: '' },
+    { id: 'row-3', col1: 'Content 4', col2: '', col3: '', col4: '' },
   ]);
   const [columns, setColumns] = useState(5);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [hoveredRowId, setHoveredRowId] = useState<string |null>(null);
+  const [imageContainer, setImageContainer] = useState<boolean>(false);
+  const [hasImage, setHasImage] = useState<{rowId: string, colId: string} | null>(null);
+
   const scrollContainerRef = useRef(null);
 
   const addRow = () => {
@@ -78,6 +87,7 @@ const MainTable = () => {
       ...Object.fromEntries([...Array(columns - 1)].map((_, i) => [`col${i + 2}`, '']))
     };
     setData([...data, newRow]);
+    setNotification("State Added");
   };
 
   const addColumn = () => {
@@ -86,6 +96,7 @@ const MainTable = () => {
         ...row, 
         [`col${columns + 1}`]: '' 
     })));
+    setNotification("Variant Added");
   };
 
   const deleteRow = (id: string) => {
@@ -114,6 +125,17 @@ const MainTable = () => {
     );
   };
 
+  const handleImageSelect = (imagePath: StaticImageData) => {
+    if(hasImage){
+      setData(prevData => prevData.map(
+        row => 
+          row.id === hasImage.rowId ? {...row, [hasImage.colId]: imagePath} : row
+      ));
+
+      setHasImage(null);
+    }
+  }
+  
   useEffect(() => {
     console.log('Data:', data)
   }, data)
@@ -152,7 +174,12 @@ const MainTable = () => {
 
               {/* Fixed body columns */}
               {data.map((row, rowIndex) => (
-                <DraggableRow key={row.id} id={row.id} index={rowIndex} moveRow={moveRow}>
+                <DraggableRow 
+                  key={row.id} 
+                  id={row.id} 
+                  index={rowIndex} 
+                  moveRow={moveRow}
+                >
                   {(dragRef) => (
                     <>
                       <div className="w-28 text-black shrink-0 p-4 border-r border-b-0 border-gray-200 flex items-center h-[200px] relative mt-[3px] mb-6 ml-5">
@@ -205,14 +232,56 @@ const MainTable = () => {
 
                 {/* Scrollable body columns */}
                 {data.map((row) => (
-                  <div key={`scroll-${row.id}`} className='flex'>
+                  <div 
+                    key={`scroll-${row.id}`} 
+                    className='flex'
+                    onMouseEnter={()=> setHoveredRowId(row.id)}
+                    onMouseLeave={() => setHoveredRowId(null)}
+                  >
                     <div className="flex group">
-                      {[...Array(columns - 2)].map((_, colIndex) => (
-                        <div key={`cell-${row.id}-${colIndex}`} className="w-[300px] shrink-0 p-4 border-r border-b-0 border-gray-200 h-[200px] flex justify-center items-center mt-[3px] mb-6">
-                          <div className="w-40 h-40 bg-white rounded-md border border-dashed border-gray-300"></div>
-                        </div>
-                      ))}
-                    </div>
+                      {[...Array(columns - 2)].map((_, colIndex) => {
+                        const colId = `col${colIndex + 2}` as keyof RowData;
+                        const imagePath = row[colId];
+                        return (
+                       <div key={`cell-${row.id}-${colIndex}`} className="w-[300px] shrink-0 p-4 border-r border-b-0 border-gray-200 h-[200px] flex justify-center items-center mt-[3px] mb-6">
+                       <div className="w-40 h-40 bg-white rounded-md border border-dashed border-gray-300 relative overflow-hidden">
+                         {imagePath ? (
+                           <>
+                           <Image 
+                            src={imagePath}
+                            alt='Selected design'
+                            fill
+                            style={{ objectFit: "cover"}}
+                           />
+                             {hoveredRowId === row.id && (
+                               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                                 <PenSquare
+                                   className='cursor-pointer text-white'
+                                   onClick={() => {
+                                     setHasImage({ rowId: row.id, colId });
+                                     setImageContainer(true);
+                                   }}
+                                 />
+                               </div>
+                             )}
+                           </>
+                         ) : (
+                           <button
+                             className="w-full h-full flex items-center justify-center text-gray-500 hover:text-gray-700"
+                             onClick={() => {
+                               setHasImage({ rowId: row.id, colId });
+                               setImageContainer(true);
+                             }}
+                           >
+                             <Plus size={24} />
+                             <span className="ml-2">Add Design</span>
+                           </button>
+                         )}
+                       </div>
+                      </div>
+                   );
+                 })}
+                 </div>
                     <div className="mt-11 w-[100px] shrink-0 p-4 font-medium text-lg border-r-0 border-b-0 border-gray-200 bg-gray-50 h-20 flex justify-center">
                       <button onClick={addColumn} className="px-6 py-3 bg-white text-black border border-gray-300 rounded hover:bg-gray-100 text-lg flex items-center justify-center">
                         <Plus size={24} />
@@ -225,6 +294,18 @@ const MainTable = () => {
           </div>
         </div>
       </div>
+      {notification && (
+        <Notification 
+        message={notification}
+        onClose={() => setNotification(null)}
+        />
+      )}
+
+      <ImageContainer 
+      isOpen={imageContainer}
+      onClose={() => setImageContainer(false)}
+      onSelectImage={handleImageSelect}
+      />
     </DndProvider>
   );
 };
