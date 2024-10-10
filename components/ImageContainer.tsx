@@ -1,17 +1,16 @@
 import React from 'react';
 import { Image as LucideImage } from 'lucide-react';
-import Image, { StaticImageData } from 'next/image';
+import Image from 'next/image';
 
-// Import images using a more maintainable pattern
 const imageImports = Array.from({ length: 20 }, (_, i) => ({
-  path: require(`../assets/image-${i + 1}.jpg`),
+  path: `/assets/image-${i + 1}.jpg`,
   id: `img-${i + 1}`
 }));
 
 interface ImageContainerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectImage: (imagePath: StaticImageData) => void;
+  onSelectImage: (imagePath: string) => void;
 }
 
 const ImageContainer = ({ isOpen, onClose, onSelectImage }: ImageContainerProps) => {
